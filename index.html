@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Compras EBI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0048B8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Compras EBI">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  html, body { margin: 0; height: 100%; background: #0048B8; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #app { position: fixed; inset: 0; border: 0; width: 100%; height: 100%; background: #fff; }
+  #splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    background: linear-gradient(160deg, #0A6BE8, #002D96); color: #FFFFFF; transition: opacity .35s ease; z-index: 2; }
+  #splash.fim { opacity: 0; pointer-events: none; }
+  #splash img { width: 112px; height: 112px; border-radius: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.28); }
+  #splash h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .2px; }
+  #splash p { margin: 0; font-size: 14px; opacity: .8; }
+  .spin { width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.3); border-top-color: #4DA3FF; border-radius: 50%; animation: gira .8s linear infinite; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  #offline { display: none; text-align: center; padding: 0 28px; }
+  #offline button { margin-top: 6px; padding: 12px 22px; border: 0; border-radius: 12px; background: #FFFFFF; color: #0048B8; font-size: 15px; font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } #splash { transition: none; } }
+</style>
+</head>
+<body>
+<div id="splash">
+  <img src="icon-192.png" alt="">
+  <h1>Compras · Espaço Bíblico Infantil</h1>
+  <div class="spin" id="spin"></div>
+  <div id="offline">
+    <p>Sem conexão com a internet.<br>Conecte-se e tente novamente.</p>
+    <button type="button" onclick="carregar()">Tentar novamente</button>
+  </div>
+</div>
+<iframe id="app" title="Compras EBI" allow="camera; clipboard-read; clipboard-write" hidden></iframe>
+
+<script>
+  // >>> COLE AQUI o link do seu Web App (termina em /exec) <<<
+  var WEBAPP_URL = 'COLE_AQUI_O_LINK_DO_WEB_APP/exec';
+
+  var frame = document.getElementById('app');
+  var splash = document.getElementById('splash');
+
+  function carregar() {
+    document.getElementById('offline').style.display = 'none';
+    document.getElementById('spin').style.display = 'block';
+    splash.classList.remove('fim');
+    if (!navigator.onLine) { mostrarOffline(); return; }
+    frame.hidden = false;
+    frame.src = WEBAPP_URL + (WEBAPP_URL.indexOf('?') > -1 ? '&' : '?') + 'pwa=1';
+  }
+
+  function mostrarOffline() {
+    document.getElementById('spin').style.display = 'none';
+    document.getElementById('offline').style.display = 'block';
+  }
+
+  frame.addEventListener('load', function () { splash.classList.add('fim'); });
+  window.addEventListener('online', carregar);
+  window.addEventListener('offline', function () { if (!splash.classList.contains('fim')) mostrarOffline(); });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js'); });
+  }
+  carregar();
+</script>
+</body>
+</html>
