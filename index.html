@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   html, body { margin: 0; height: 100%; background: #0048B8; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  #app { position: fixed; inset: 0; border: 0; width: 100%; height: 100%; background: #fff; }
+  #app { position: fixed; top: 0; left: 0; right: 0; bottom: var(--barra, 0px); border: 0; width: 100%; background: #fff; }
   #splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
     background: linear-gradient(160deg, #0A6BE8, #002D96); color: #FFFFFF; transition: opacity .35s ease; z-index: 2; }
   #splash.fim { opacity: 0; pointer-events: none; }
@@ -25,6 +25,21 @@
   @keyframes gira { to { transform: rotate(360deg); } }
   #offline { display: none; text-align: center; padding: 0 28px; }
   #offline button { margin-top: 6px; padding: 12px 22px; border: 0; border-radius: 12px; background: #FFFFFF; color: #0048B8; font-size: 15px; font-weight: 600; }
+  #instalar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: #0048B8; color: #fff; box-shadow: 0 -6px 20px rgba(0,0,0,.22); }
+  #instalar[hidden], #ios[hidden] { display: none; }
+  #instalar img { width: 44px; height: 44px; border-radius: 11px; flex: none; }
+  #instalar .txt { flex: 1; min-width: 0; line-height: 1.25; }
+  #instalar .txt strong { display: block; font-size: 15px; }
+  #instalar .txt span { font-size: 12.5px; opacity: .85; }
+  #btnInstalar { flex: none; padding: 11px 16px; border: 0; border-radius: 11px; background: #fff; color: #0048B8; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+  #fecharInstalar { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(255,255,255,.16); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+  #instalar button:focus-visible, #ios button:focus-visible { outline: 3px solid #4DA3FF; outline-offset: 2px; }
+  #ios { position: fixed; inset: 0; z-index: 4; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,20,60,.55); }
+  #ios .caixa { width: 100%; max-width: 460px; box-sizing: border-box; background: #fff; color: #10233f; border-radius: 18px 18px 0 0; padding: 22px 22px calc(22px + env(safe-area-inset-bottom, 0px)); }
+  #ios h2 { margin: 0 0 12px; font-size: 18px; }
+  #ios ol { margin: 0 0 18px; padding-left: 20px; font-size: 15px; line-height: 1.6; }
+  #ios button { width: 100%; padding: 13px; border: 0; border-radius: 12px; background: #0048B8; color: #fff; font-size: 15px; font-weight: 600; }
   @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } #splash { transition: none; } }
 </style>
 </head>
@@ -39,6 +54,24 @@
   </div>
 </div>
 <iframe id="app" title="Compras EBI" allow="camera; clipboard-read; clipboard-write" hidden></iframe>
+
+<div id="instalar" hidden>
+  <img src="icon-192.png" alt="">
+  <div class="txt"><strong>Instalar o app Compras EBI</strong><span>Abra direto da tela inicial do celular</span></div>
+  <button type="button" id="btnInstalar">Instalar aplicativo</button>
+  <button type="button" id="fecharInstalar" aria-label="Fechar">&times;</button>
+</div>
+<div id="ios" hidden role="dialog" aria-modal="true" aria-label="Como instalar no iPhone">
+  <div class="caixa">
+    <h2>Instalar no iPhone ou iPad</h2>
+    <ol>
+      <li>Abra este endereço no <strong>Safari</strong>.</li>
+      <li>Toque no botão <strong>Compartilhar</strong> (quadrado com seta para cima).</li>
+      <li>Escolha <strong>Adicionar à Tela de Início</strong> e toque em <strong>Adicionar</strong>.</li>
+    </ol>
+    <button type="button" id="fecharIos">Entendi</button>
+  </div>
+</div>
 
 <script>
   // >>> COLE AQUI o link do seu Web App (termina em /exec) <<<
@@ -74,6 +107,54 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js'); });
   }
+  // ---- Botão "Instalar aplicativo" ----
+  var barra = document.getElementById('instalar');
+  var avisoIos = document.getElementById('ios');
+  var promptInstalacao = null;
+
+  function jaInstalado() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  }
+  function ehIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+  function adiado() {
+    try { return Number(localStorage.getItem('ebi-instalar-ate') || 0) > Date.now(); } catch (e) { return false; }
+  }
+  function mostrarBarra() {
+    if (jaInstalado() || adiado()) return;
+    barra.hidden = false;
+    document.documentElement.style.setProperty('--barra', barra.offsetHeight + 'px');
+  }
+  function esconderBarra() {
+    barra.hidden = true;
+    document.documentElement.style.setProperty('--barra', '0px');
+  }
+
+  // Android / Chrome / Edge: o navegador avisa quando o app pode ser instalado
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    promptInstalacao = e;
+    mostrarBarra();
+  });
+  window.addEventListener('appinstalled', function () { promptInstalacao = null; esconderBarra(); });
+  // iPhone / iPad: não há aviso automático, então mostramos a barra com as instruções
+  if (ehIOS()) mostrarBarra();
+
+  document.getElementById('btnInstalar').addEventListener('click', function () {
+    if (promptInstalacao) {
+      promptInstalacao.prompt();
+      promptInstalacao.userChoice.then(function () { promptInstalacao = null; esconderBarra(); });
+    } else if (ehIOS()) {
+      avisoIos.hidden = false;
+    }
+  });
+  document.getElementById('fecharInstalar').addEventListener('click', function () {
+    esconderBarra();
+    try { localStorage.setItem('ebi-instalar-ate', String(Date.now() + 3 * 24 * 3600 * 1000)); } catch (e) {}
+  });
+  document.getElementById('fecharIos').addEventListener('click', function () { avisoIos.hidden = true; });
+
   carregar();
 </script>
 </body>
