@@ -34,7 +34,7 @@
   <h1>Compras · Espaço Bíblico Infantil</h1>
   <div class="spin" id="spin"></div>
   <div id="offline">
-    <p>Sem conexão com a internet.<br>Conecte-se e tente novamente.</p>
+    <p id="msg">Sem conexão com a internet.<br>Conecte-se e tente novamente.</p>
     <button type="button" onclick="carregar()">Tentar novamente</button>
   </div>
 </div>
@@ -42,12 +42,18 @@
 
 <script>
   // >>> COLE AQUI o link do seu Web App (termina em /exec) <<<
-  var WEBAPP_URL = 'COLE_AQUI_O_LINK_DO_WEB_APP/exec';
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxlk_Jq218zUFQi38I86mRt5yJqnTYWEMQjVHrU6C1O4M6mjJ65PolOzxJmV8SfGJE9OQ/exec';
 
   var frame = document.getElementById('app');
   var splash = document.getElementById('splash');
 
   function carregar() {
+    if (WEBAPP_URL.indexOf('COLE_AQUI') > -1) {
+      document.getElementById('msg').innerHTML = 'Falta colar o link do Web App (termina em /exec) no arquivo index.html.';
+      document.querySelector('#offline button').style.display = 'none';
+      mostrarOffline();
+      return;
+    }
     document.getElementById('offline').style.display = 'none';
     document.getElementById('spin').style.display = 'block';
     splash.classList.remove('fim');
